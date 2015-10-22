@@ -49,7 +49,11 @@ action :create do
   if Chef::Config[:solo] && !chef_solo_search_installed?
     Chef::Log.warn('This recipe uses search. Chef Solo does not support search unless you install the chef-solo-search cookbook.')
   else
-    search(new_resource.data_bag, "groups:#{new_resource.search_group} AND NOT action:remove") do |u|
+    users = search(new_resource.data_bag, "groups:#{new_resource.search_group} AND NOT action:remove")
+    if users.length < 5 && new_resource.search_group == 'sysadmin'
+      Chef::Log.fatal!("Not enough sysadmins (#{users.length}). Is search broken?")
+    end
+    users do |u|
       u['username'] ||= u['id']
       security_group << u['username']
 
